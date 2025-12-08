@@ -6,17 +6,25 @@
     <title>Christmas Tree Animation</title>
     <style>
         body {
-            /* CHANGED: Very dark blue background to confirm file update */
+            /* Dark Blue Background */
             background: #000011;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex; 
             justify-content: center; 
             align-items: center;
-            height: 100vh; 
+            min-height: 100vh; 
             margin: 0; 
-            overflow: hidden;
             flex-direction: column;
+        }
+
+        #error-log {
+            color: #ff5555;
+            background: #220000;
+            padding: 10px;
+            display: none; /* Hidden unless there is an error */
+            border: 1px solid red;
+            margin-bottom: 20px;
         }
 
         #tree-canvas { 
@@ -37,12 +45,12 @@
         #track-canvas {
             display: flex;
             flex-direction: row;
-            justify-content: center; /* Center the track */
+            justify-content: center;
             align-items: center; 
             height: 150px; 
             width: 100%;
             white-space: nowrap; 
-            overflow: hidden;
+            /* overflow is allowed now to prevent hiding */
         }
 
         .track-item {
@@ -68,10 +76,23 @@
 </head>
 <body>
 
+    <div id="error-log"></div>
+
     <div id="tree-canvas"></div>
     <div id="track-canvas"></div>
 
 <script>
+// --- ERROR HANDLER (Run this first) ---
+window.onerror = function(message, source, lineno, colno, error) {
+    const log = document.getElementById('error-log');
+    log.style.display = 'block';
+    log.innerHTML += `Error: ${message} at line ${lineno}<br>`;
+};
+</script>
+
+<script>
+// --- MAIN SCRIPT ---
+
 const treeRaw = `
           *
          / \\
@@ -96,12 +117,14 @@ const styles = {
 };
 
 const EMOJI = {sledge:"🛷", reindeer:"🦌"};
-const SNOW = ".", TRAIL = " ~ "; 
-const lines = treeRaw.split('\n');
-// Ensure width is wide enough
-const width = Math.max(...lines.map(l=>l.length), 60);
+const SNOW = ".";
+const TRAIL = " ~ "; 
 
-// CHANGED: Start in the middle (30) so you see it immediately.
+// 1. Safe Width Logic
+const lines = treeRaw.split('\n');
+const width = 65; // Hardcoded width to be safe
+
+// 2. Start Position (Middle of screen)
 let sledPos = 30;
 
 function color(text, style, extraClass = "") {
@@ -110,33 +133,35 @@ function color(text, style, extraClass = "") {
 }
 
 function renderTree() {
-    const rows = lines.map((line, i) => {
-        let padLine = line.padEnd(width, " ");
-        let res = "";
-        for (let j = 0; j < padLine.length; j++) {
-            let c = padLine[j];
-            if (i === 0 && c === '*') res += color(c, styles.yellow);
-            else if (c === 'O') {
-                const col = styles.ornament[Math.floor(Math.random() * styles.ornament.length)];
-                res += color("O", `color:${col}`);
-            } else if ("*/\\".includes(c)) res += color(c, styles.green);
-            else if ("|_".includes(c)) res += color(c, styles.brown);
-            else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
-            else res += c;
-        }
-        return `<div class="tree-line">${res}</div>`;
-    });
-    return rows.join('');
+    try {
+        const rows = lines.map((line, i) => {
+            let padLine = line.padEnd(width, " ");
+            let res = "";
+            for (let j = 0; j < padLine.length; j++) {
+                let c = padLine[j];
+                if (i === 0 && c === '*') res += color(c, styles.yellow);
+                else if (c === 'O') {
+                    const col = styles.ornament[Math.floor(Math.random() * styles.ornament.length)];
+                    res += color("O", `color:${col}`);
+                } else if ("*/\\".includes(c)) res += color(c, styles.green);
+                else if ("|_".includes(c)) res += color(c, styles.brown);
+                else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
+                else res += c;
+            }
+            return `<div class="tree-line">${res}</div>`;
+        });
+        return rows.join('');
+    } catch(e) {
+        console.error("Tree Error", e);
+        return "Tree Error";
+    }
 }
 
 function renderTrack() {
     const track = [];
     
-    // SEQUENCE LOGIC (Right-to-Left movement):
-    // 1. Reindeer is at the lowest index (Leading the leftward movement)
-    // 2. Sledge is behind it (Index + 1)
-    // 3. Trail is behind sledge (Index > Sledge)
-    
+    // SEQUENCE:
+    // Reindeer (Leftmost) -> Sledge -> Trail (Rightmost)
     let r = Math.floor(sledPos); 
     let s = r + 1;               
     
@@ -151,7 +176,7 @@ function renderTrack() {
             content = EMOJI.sledge; 
             classList += ' big-item';
         } else if (i > s && i <= s + 4) { 
-            // Trail is to the RIGHT of the sledge
+            // Trail is to the right of the sledge
             content = TRAIL;
             classList += ' trail';
         } else {
@@ -163,16 +188,19 @@ function renderTrack() {
 }
 
 function animate() {
-    document.getElementById('tree-canvas').innerHTML = renderTree();
-    document.getElementById('track-canvas').innerHTML = renderTrack();
+    const treeEl = document.getElementById('tree-canvas');
+    const trackEl = document.getElementById('track-canvas');
     
-    // MOVEMENT: Decrementing position moves items Left
-    // Reset to Right side (width + 5) when it goes off Left side (-15)
-    sledPos = (sledPos < -15) ? width + 5 : sledPos - 0.5; 
+    if(treeEl) treeEl.innerHTML = renderTree();
+    if(trackEl) trackEl.innerHTML = renderTrack();
+    
+    // Move LEFT (subtracting). Reset if it goes too far left ( < -20)
+    sledPos = (sledPos < -20) ? width + 5 : sledPos - 0.5; 
 }
 
-// Slightly faster animation
+// Start animation
 setInterval(animate, 80);
+
 </script>
 </body>
 </html>
