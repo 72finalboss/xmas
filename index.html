@@ -84,8 +84,8 @@ const treeRaw = `
    /*********O***\\
   /****O**********\\
  /*********O***O***\\
-      |_____|
-      |_____|
+       |_____|
+       |_____|
 `.trim();
 
 const styles = {
@@ -141,10 +141,10 @@ function renderTrack() {
         let classList = 'track-item';
 
         if (i === r) {
-            content = EMOJI.reindeer;
+            content = EMOJI.sledge;
             classList += ' big-item';
         } else if (i === s) {
-            content = EMOJI.sledge;
+            content = EMOJI.reindeer;
             classList += ' big-item';
         } else if (i >= s - 4 && i < s) {
             content = TRAIL;
