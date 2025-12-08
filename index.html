@@ -14,6 +14,11 @@
             font-weight: bold; font-size: 1.2rem;
         }
         pre { white-space: pre; line-height: 1.2; margin: 0; }
+        .big-emoji {
+            font-size: 6em;
+            line-height: 0.8;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -49,8 +54,9 @@ let sledPos = -10;
 const lines = treeRaw.split('\n');
 const width = Math.max(...lines.map(l=>l.length), 50);
 
-function color(text, style) {
-    return `<span style="${style}">${text}</span>`;
+function color(text, style, extraClass = "") {
+    let classAttr = extraClass ? ` class="${extraClass}"` : "";
+    return `<span${classAttr} style="${style}">${text}</span>`;
 }
 
 function renderTree() {
@@ -81,8 +87,9 @@ function renderTrack() {
     for (let i=1; i<=5; i++) {
         let t = s-i; if (t>=0 && t<width) track[t] = color(TRAIL, styles.white);
     }
-    if (s>=0 && s<width) track[s] = EMOJI.sledge;
-    if (r>=0 && r<width) track[r] = EMOJI.reindeer;
+    // Use big class for bigger emojis:
+    if (s>=0 && s<width) track[s] = color(EMOJI.sledge, styles.white, "big-emoji");
+    if (r>=0 && r<width) track[r] = color(EMOJI.reindeer, styles.white, "big-emoji");
     return "\n" + track.join("");
 }
 
