@@ -9,52 +9,79 @@
             background: #000;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; margin: 0; overflow: hidden;
-            font-weight: bold; font-size: 1.2rem;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden;
             flex-direction: column;
         }
-        #tree-canvas { white-space: pre; line-height: 1.2; margin: 0; }
+
+        #tree-canvas { 
+            white-space: pre; 
+            line-height: 1.2; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+            font-size: 1.2rem;
+            /* Ensures tree stays centered regardless of width */
+            text-align: center; 
+        }
+
         #track-canvas {
             display: flex;
             flex-direction: row;
             justify-content: flex-start;
-            align-items: flex-end;
-            height: 140px;  /* Make space for giant emoji! */
+            /* ALIGNMENT FIX: Center the small trail with the big emojis */
+            align-items: center; 
+            height: 150px; 
             width: 100%;
-            margin: 0;
+            /* PREVENT WRAPPING: Keeps everything on one line */
+            white-space: nowrap; 
+            overflow: hidden;
         }
-        .big-emoji {
-            font-size: 6em;
-            line-height: 0.8;
-            vertical-align: middle;
-        }
-        .trail {
-            color: #fff;
-            font-size: 1.2rem;
-        }
+
         .track-item {
-            width: 1.2em;
+            /* Standard width for empty space and trails */
+            min-width: 15px; 
             text-align: center;
             display: inline-block;
+        }
+
+        /* Special class for the big emojis so they don't get squashed */
+        .big-item {
+            font-size: 6em;
+            line-height: 1;
+            /* Reset width to auto so the emoji takes the space it needs */
+            width: auto; 
+            min-width: auto;
+            margin: 0 5px; /* Add a little breathing room */
+        }
+
+        .trail {
+            color: #ccc;
+            font-size: 1.5rem;
+            opacity: 0.7;
         }
     </style>
 </head>
 <body>
+
     <pre id="tree-canvas"></pre>
     <div id="track-canvas"></div>
+
 <script>
 const treeRaw = `
-         *
-        / \
-       /*O*\
-      /*****\
-     /**O****\
-    /******O**\
-   /**O********\
-  /*********O***\
- /****O**********\
-/*********O***O***\
+          *
+         / \\
+        /*O*\\
+       /*****\\
+      /**O****\\
+     /******O**\\
+    /**O********\\
+   /*********O***\\
+  /****O**********\\
+ /*********O***O***\\
       |_____|
       |_____|
 `.trim();
@@ -64,24 +91,23 @@ const styles = {
     yellow: 'color: #f1c40f;',
     brown:  'color: #d35400;',
     white:  'color: #ffffff;',
-    ornament: [
-        '#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff'
-    ]
+    ornament: ['#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff']
 };
+
 const EMOJI = {sledge:"🛷", reindeer:"🦌"};
-const SNOW = ".", TRAIL = "=";
+const SNOW = ".", TRAIL = " ~ "; // Changed trail to ~ for a 'wind' look
 let sledPos = -10;
 const lines = treeRaw.split('\n');
-const width = Math.max(...lines.map(l=>l.length), 50);
+const width = Math.max(...lines.map(l=>l.length), 60); // Increased logic width
 
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
     return `<span${classAttr} style="${style}">${text}</span>`;
 }
 
-// Tree stays classic
 function renderTree() {
     return lines.map((line, i) => {
+        // Center the tree lines relative to the max width
         let padLine = line.padEnd(width, " ");
         let res = "";
         for (let j = 0; j < padLine.length; j++) {
@@ -99,24 +125,28 @@ function renderTree() {
     }).join('\n');
 }
 
-// Track is now an array of elements for flex rendering!
 function renderTrack() {
     const track = [];
-    let r = Math.floor(sledPos), s = r-1;
+    let r = Math.floor(sledPos); // Reindeer position
+    let s = r - 1;               // Sledge position
+    
+    // We render a grid of spans
     for (let i = 0; i < width; i++) {
         let content = '';
         let classList = 'track-item';
+
         if (i === r) {
             content = EMOJI.reindeer;
-            classList += ' big-emoji';
+            classList += ' big-item';
         } else if (i === s) {
             content = EMOJI.sledge;
-            classList += ' big-emoji';
-        } else if (i >= s-5 && i < s) {
+            classList += ' big-item';
+        } else if (i >= s - 4 && i < s) {
             content = TRAIL;
             classList += ' trail';
         } else {
-            content = '';
+            // Use non-breaking space to hold layout structure
+            content = '&nbsp;'; 
         }
         track.push(`<span class="${classList}">${content}</span>`);
     }
@@ -126,9 +156,12 @@ function renderTrack() {
 function animate() {
     document.getElementById('tree-canvas').innerHTML = renderTree();
     document.getElementById('track-canvas').innerHTML = renderTrack();
-    sledPos = (sledPos > width + 5) ? -10 : sledPos + 1;
+    
+    // Move sled, reset when it goes off screen
+    sledPos = (sledPos > width + 5) ? -10 : sledPos + 0.5; // Slowed down slightly for smoothness
 }
-setInterval(animate, 150);
+
+setInterval(animate, 100);
 </script>
 </body>
 </html>
