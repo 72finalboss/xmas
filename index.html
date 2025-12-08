@@ -19,26 +19,25 @@
         }
 
         #tree-canvas { 
-            /* Removed 'white-space: pre' here, moving it to the lines */
             margin-bottom: 20px; 
             font-weight: bold;
             font-size: 1.2rem;
             display: flex;
-            flex-direction: column; /* Forces vertical stacking */
-            align-items: center;    /* Centers the tree in the middle of the screen */
+            flex-direction: column; 
+            align-items: center;    
         }
 
-        /* NEW CLASS: Ensures every line is a separate block */
         .tree-line {
-            white-space: pre; /* Keeps the internal spaces (the shape of the tree) */
-            height: 1.2em;    /* Consistent height prevents jumping */
+            white-space: pre; 
+            height: 1.2em;    
             display: block;
         }
 
         #track-canvas {
             display: flex;
             flex-direction: row;
-            justify-content: flex-start;
+            /* CHANGE: Center the track horizontally */
+            justify-content: center;
             align-items: center; 
             height: 150px; 
             width: 100%;
@@ -84,8 +83,8 @@ const treeRaw = `
    /*********O***\\
   /****O**********\\
  /*********O***O***\\
-       |_____|
-       |_____|
+      |_____|
+      |_____|
 `.trim();
 
 const styles = {
@@ -98,9 +97,11 @@ const styles = {
 
 const EMOJI = {sledge:"🛷", reindeer:"🦌"};
 const SNOW = ".", TRAIL = " ~ "; 
-let sledPos = -10;
 const lines = treeRaw.split('\n');
 const width = Math.max(...lines.map(l=>l.length), 60);
+
+// CHANGE: Start off-screen to the RIGHT
+let sledPos = width + 5;
 
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
@@ -108,7 +109,6 @@ function color(text, style, extraClass = "") {
 }
 
 function renderTree() {
-    // Generate an array of HTML strings, one for each line
     const rows = lines.map((line, i) => {
         let padLine = line.padEnd(width, " ");
         let res = "";
@@ -119,52 +119,4 @@ function renderTree() {
                 const col = styles.ornament[Math.floor(Math.random() * styles.ornament.length)];
                 res += color("O", `color:${col}`);
             } else if ("*/\\".includes(c)) res += color(c, styles.green);
-            else if ("|_".includes(c)) res += color(c, styles.brown);
-            else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
-            else res += c;
-        }
-        // WRAPPER: Wrap each processed line in a div
-        return `<div class="tree-line">${res}</div>`;
-    });
-    
-    // Join them with nothing (the divs provide the break)
-    return rows.join('');
-}
-
-function renderTrack() {
-    const track = [];
-    let r = Math.floor(sledPos); 
-    let s = r - 1;               
-    
-    for (let i = 0; i < width; i++) {
-        let content = '';
-        let classList = 'track-item';
-
-        if (i === r) {
-            content = EMOJI.reindeer;
-            classList += ' big-item';
-        } else if (i === s) {
-            content = EMOJI.sledge;
-            classList += ' big-item';
-        } else if (i >= s - 4 && i < s) {
-            content = TRAIL;
-            classList += ' trail';
-        } else {
-            content = '&nbsp;'; 
-        }
-        track.push(`<span class="${classList}">${content}</span>`);
-    }
-    return track.join('');
-}
-
-function animate() {
-    document.getElementById('tree-canvas').innerHTML = renderTree();
-    document.getElementById('track-canvas').innerHTML = renderTrack();
-    
-    sledPos = (sledPos > width + 5) ? -10 : sledPos + 0.5; 
-}
-
-setInterval(animate, 100);
-</script>
-</body>
-</html>
+            else if ("|_".includes(c)) res += color(c, styles.
