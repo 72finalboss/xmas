@@ -21,18 +21,25 @@
         #track { height: 100px; display: flex; justify-content: center; align-items: center; }
         #tree  { font-size: 1.2rem; line-height: 1.2; }
         
-        /* VIDEO STYLES */
-        #video-container {
+        /* VIDEO GALLERY STYLES */
+        #video-gallery {
             margin-top: 40px;
+            display: flex;           /* Aligns videos in a row */
+            flex-wrap: wrap;         /* Allows wrapping on small screens */
+            justify-content: center; /* Centers them */
+            gap: 20px;               /* Space between videos */
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        .video-wrapper {
             border: 2px solid #333;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 0 20px rgba(255,255,255,0.1);
-            /* Optional: limit width so it doesn't take over screen */
-            max-width: 315px; 
+            width: 300px; /* Fixed width for each video card */
         }
         
-        /* Make video responsive */
         video {
             display: block;
             width: 100%;
@@ -49,8 +56,20 @@
     <div id="track"></div>
     <div id="tree"></div>
 
-    <div id="video-container">
-        <video src="happy-cat.mp4" autoplay loop muted playsinline></video>
+    <div id="video-gallery">
+        
+        <div class="video-wrapper">
+            <video src="happy-cat.mp4" autoplay loop muted playsinline></video>
+        </div>
+
+        <div class="video-wrapper">
+            <video src="dance-cat.mp4" autoplay loop muted playsinline></video>
+        </div>
+
+        <div class="video-wrapper">
+            <video src="dance-cat.mp4" autoplay loop muted playsinline></video>
+        </div>
+
     </div>
 
 <script>
@@ -62,7 +81,7 @@
         "          *", "         / \\", "        /*O*\\", "       /*****\\", 
         "      /**O****\\", "     /******O**\\", "    /**O********\\", 
         "   /*********O***\\", "  /****O**********\\", " /*********O***O***\\", 
-        "       |_____|", "       |_____|"
+        "      |_____|", "      |_____|"
     ];
 
     const lines = [...Array(gapHeight).fill(""), ...treeDesign];
