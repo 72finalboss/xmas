@@ -6,8 +6,7 @@
     <title>Christmas Tree Animation</title>
     <style>
         body {
-            /* Dark Blue Background */
-            background: #000011;
+            background: #000011; /* Dark Blue */
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex; 
@@ -16,30 +15,25 @@
             min-height: 100vh; 
             margin: 0; 
             flex-direction: column;
-        }
-
-        #error-log {
-            color: #ff5555;
-            background: #220000;
-            padding: 10px;
-            display: none; /* Hidden unless there is an error */
-            border: 1px solid red;
-            margin-bottom: 20px;
+            width: 100%;
+            overflow: hidden; 
         }
 
         #tree-canvas { 
-            margin-bottom: 20px; 
+            /* Tree is now below the track */
             font-weight: bold;
             font-size: 1.2rem;
             display: flex;
             flex-direction: column; 
-            align-items: center;    
+            align-items: center;
+            width: 100%;
         }
 
         .tree-line {
             white-space: pre; 
             height: 1.2em;    
             display: block;
+            text-align: center;
         }
 
         #track-canvas {
@@ -47,10 +41,10 @@
             flex-direction: row;
             justify-content: center;
             align-items: center; 
-            height: 150px; 
+            height: 100px; /* Reduced slightly so it fits better with the gap */
             width: 100%;
             white-space: nowrap; 
-            /* overflow is allowed now to prevent hiding */
+            margin-bottom: 20px; /* Space between track and snow-sky */
         }
 
         .track-item {
@@ -76,37 +70,33 @@
 </head>
 <body>
 
-    <div id="error-log"></div>
-
-    <div id="tree-canvas"></div>
     <div id="track-canvas"></div>
+    <div id="tree-canvas"></div>
 
 <script>
-// --- ERROR HANDLER (Run this first) ---
-window.onerror = function(message, source, lineno, colno, error) {
-    const log = document.getElementById('error-log');
-    log.style.display = 'block';
-    log.innerHTML += `Error: ${message} at line ${lineno}<br>`;
-};
-</script>
+// --- CONFIGURATION ---
 
-<script>
-// --- MAIN SCRIPT ---
+const treeBody = [
+    "          *",
+    "         / \\",
+    "        /*O*\\",
+    "       /*****\\",
+    "      /**O****\\",
+    "     /******O**\\",
+    "    /**O********\\",
+    "   /*********O***\\",
+    "  /****O**********\\",
+    " /*********O***O***\\",
+    "      |_____|",
+    "      |_____|"
+];
 
-const treeRaw = `
-          *
-         / \\
-        /*O*\\
-       /*****\\
-      /**O****\\
-     /******O**\\
-    /**O********\\
-   /*********O***\\
-  /****O**********\\
- /*********O***O***\\
-      |_____|
-      |_____|
-`.trim();
+// CHANGE: Create 10 empty lines for the "Snow Gap"
+const GAP_SIZE = 10;
+const gapLines = Array(GAP_SIZE).fill(""); 
+
+// Combine them: [10 Blank Lines] + [Tree Lines]
+const lines = gapLines.concat(treeBody);
 
 const styles = {
     green: 'color: #2ecc71;',
@@ -120,12 +110,30 @@ const EMOJI = {sledge:"🛷", reindeer:"🦌"};
 const SNOW = ".";
 const TRAIL = " ~ "; 
 
-// 1. Safe Width Logic
-const lines = treeRaw.split('\n');
-const width = 65; // Hardcoded width to be safe
+// Full screen width simulation
+const width = 200; 
 
-// 2. Start Position (Middle of screen)
-let sledPos = 30;
+// Start exactly at the Right Border
+let sledPos = width;
+
+// TIMING COUNTERS
+let ornamentTick = 0;
+let snowTick = 0;
+
+// CALCULATE GLOBAL OFFSET FOR TREE CENTERING
+// We only care about the width of the actual tree part
+const maxLineLength = Math.max(...treeBody.map(l => l.length));
+const treeStartColumn = Math.floor((width - maxLineLength) / 2);
+
+// Setup initial snow map
+let snowMap = [];
+for(let r=0; r<lines.length; r++) {
+    let row = [];
+    for(let c=0; c<width; c++) {
+        row.push(false);
+    }
+    snowMap.push(row);
+}
 
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
@@ -133,35 +141,53 @@ function color(text, style, extraClass = "") {
 }
 
 function renderTree() {
-    try {
-        const rows = lines.map((line, i) => {
-            let padLine = line.padEnd(width, " ");
-            let res = "";
-            for (let j = 0; j < padLine.length; j++) {
-                let c = padLine[j];
-                if (i === 0 && c === '*') res += color(c, styles.yellow);
+    let htmlOutput = "";
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        let res = "";
+        
+        for (let j = 0; j < width; j++) {
+            
+            // Calculate where we are relative to the tree block
+            let treeCharIndex = j - treeStartColumn;
+
+            // Check if we are inside the bounds of the tree string
+            if (treeCharIndex >= 0 && treeCharIndex < line.length) {
+                let c = line[treeCharIndex]; 
+
+                // CHANGE: Star is now at index 'GAP_SIZE' (10), not 0
+                if (i === GAP_SIZE && c === '*') {
+                    res += color(c, styles.yellow); 
+                } 
                 else if (c === 'O') {
-                    const col = styles.ornament[Math.floor(Math.random() * styles.ornament.length)];
-                    res += color("O", `color:${col}`);
-                } else if ("*/\\".includes(c)) res += color(c, styles.green);
-                else if ("|_".includes(c)) res += color(c, styles.brown);
-                else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
-                else res += c;
+                    const colorIndex = (Math.floor(ornamentTick / 15) + j) % styles.ornament.length;
+                    res += color("O", `color:${styles.ornament[colorIndex]}`);
+                } 
+                else if ("*/\\".includes(c)) {
+                    res += color(c, styles.green);
+                } 
+                else if ("|_".includes(c)) {
+                    res += color(c, styles.brown);
+                } 
+                else if (c === " ") {
+                    res += (snowMap[i] && snowMap[i][j]) ? color(SNOW, styles.white) : " ";
+                } 
+                else {
+                    res += c;
+                }
+            } else {
+                 // OUTSIDE THE TREE (Snow Area for Gap and Sides)
+                 res += (snowMap[i] && snowMap[i][j]) ? color(SNOW, styles.white) : " ";
             }
-            return `<div class="tree-line">${res}</div>`;
-        });
-        return rows.join('');
-    } catch(e) {
-        console.error("Tree Error", e);
-        return "Tree Error";
+        }
+        htmlOutput += `<div class="tree-line">${res}</div>`;
     }
+    return htmlOutput;
 }
 
 function renderTrack() {
-    const track = [];
-    
-    // SEQUENCE:
-    // Reindeer (Leftmost) -> Sledge -> Trail (Rightmost)
+    let trackHTML = "";
     let r = Math.floor(sledPos); 
     let s = r + 1;               
     
@@ -176,29 +202,44 @@ function renderTrack() {
             content = EMOJI.sledge; 
             classList += ' big-item';
         } else if (i > s && i <= s + 4) { 
-            // Trail is to the right of the sledge
             content = TRAIL;
             classList += ' trail';
         } else {
             content = '&nbsp;'; 
         }
-        track.push(`<span class="${classList}">${content}</span>`);
+        trackHTML += `<span class="${classList}">${content}</span>`;
     }
-    return track.join('');
+    return trackHTML;
 }
 
 function animate() {
+    snowTick++;
+    if (snowTick % 10 === 0) {
+        for(let r=0; r<lines.length; r++) {
+            for(let c=0; c<width; c++) {
+                // Low density snow for full screen
+                snowMap[r][c] = (Math.random() < 0.02);
+            }
+        }
+    }
+    
+    ornamentTick++;
+
     const treeEl = document.getElementById('tree-canvas');
     const trackEl = document.getElementById('track-canvas');
     
-    if(treeEl) treeEl.innerHTML = renderTree();
-    if(trackEl) trackEl.innerHTML = renderTrack();
+    if (treeEl) treeEl.innerHTML = renderTree();
+    if (trackEl) trackEl.innerHTML = renderTrack();
     
-    // Move LEFT (subtracting). Reset if it goes too far left ( < -20)
-    sledPos = (sledPos < -20) ? width + 5 : sledPos - 0.5; 
+    // Move Reindeer
+    if (sledPos < -8) {
+        sledPos = width;
+    } else {
+        sledPos -= 0.5;
+    }
 }
 
-// Start animation
+// Start
 setInterval(animate, 80);
 
 </script>
