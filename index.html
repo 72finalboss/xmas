@@ -6,7 +6,8 @@
     <title>Christmas Tree Animation</title>
     <style>
         body {
-            background: #000;
+            /* CHANGED: Very dark blue background to confirm file update */
+            background: #000011;
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex; 
@@ -36,8 +37,7 @@
         #track-canvas {
             display: flex;
             flex-direction: row;
-            /* CHANGE: Center the track horizontally */
-            justify-content: center;
+            justify-content: center; /* Center the track */
             align-items: center; 
             height: 150px; 
             width: 100%;
@@ -98,10 +98,11 @@ const styles = {
 const EMOJI = {sledge:"🛷", reindeer:"🦌"};
 const SNOW = ".", TRAIL = " ~ "; 
 const lines = treeRaw.split('\n');
+// Ensure width is wide enough
 const width = Math.max(...lines.map(l=>l.length), 60);
 
-// CHANGE: Start off-screen to the RIGHT
-let sledPos = width + 5;
+// CHANGED: Start in the middle (30) so you see it immediately.
+let sledPos = 30;
 
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
@@ -119,4 +120,59 @@ function renderTree() {
                 const col = styles.ornament[Math.floor(Math.random() * styles.ornament.length)];
                 res += color("O", `color:${col}`);
             } else if ("*/\\".includes(c)) res += color(c, styles.green);
-            else if ("|_".includes(c)) res += color(c, styles.
+            else if ("|_".includes(c)) res += color(c, styles.brown);
+            else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
+            else res += c;
+        }
+        return `<div class="tree-line">${res}</div>`;
+    });
+    return rows.join('');
+}
+
+function renderTrack() {
+    const track = [];
+    
+    // SEQUENCE LOGIC (Right-to-Left movement):
+    // 1. Reindeer is at the lowest index (Leading the leftward movement)
+    // 2. Sledge is behind it (Index + 1)
+    // 3. Trail is behind sledge (Index > Sledge)
+    
+    let r = Math.floor(sledPos); 
+    let s = r + 1;               
+    
+    for (let i = 0; i < width; i++) {
+        let content = '';
+        let classList = 'track-item';
+
+        if (i === r) {
+            content = EMOJI.reindeer; 
+            classList += ' big-item';
+        } else if (i === s) {
+            content = EMOJI.sledge; 
+            classList += ' big-item';
+        } else if (i > s && i <= s + 4) { 
+            // Trail is to the RIGHT of the sledge
+            content = TRAIL;
+            classList += ' trail';
+        } else {
+            content = '&nbsp;'; 
+        }
+        track.push(`<span class="${classList}">${content}</span>`);
+    }
+    return track.join('');
+}
+
+function animate() {
+    document.getElementById('tree-canvas').innerHTML = renderTree();
+    document.getElementById('track-canvas').innerHTML = renderTrack();
+    
+    // MOVEMENT: Decrementing position moves items Left
+    // Reset to Right side (width + 5) when it goes off Left side (-15)
+    sledPos = (sledPos < -15) ? width + 5 : sledPos - 0.5; 
+}
+
+// Slightly faster animation
+setInterval(animate, 80);
+</script>
+</body>
+</html>
