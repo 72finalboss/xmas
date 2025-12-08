@@ -10,12 +10,35 @@
             font-family: 'Courier New', monospace;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            height: 100vh; margin: 0; overflow: hidden; width: 100%;
+            min-height: 100vh; 
+            margin: 0; 
+            overflow-x: hidden; 
+            overflow-y: auto;   
+            width: 100%;
+            padding: 20px 0;    
         }
         #track, #tree { width: 100%; white-space: pre; text-align: center; font-weight: bold; }
         #track { height: 100px; display: flex; justify-content: center; align-items: center; }
         #tree  { font-size: 1.2rem; line-height: 1.2; }
         
+        /* VIDEO STYLES */
+        #video-container {
+            margin-top: 40px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            /* Optional: limit width so it doesn't take over screen */
+            max-width: 315px; 
+        }
+        
+        /* Make video responsive */
+        video {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
         .item { display: inline-block; min-width: 15px; text-align: center; }
         .big  { font-size: 6em; line-height: 1; margin: 0 5px; width: auto; }
         .trail{ color: #ccc; font-size: 1.5rem; opacity: 0.7; }
@@ -25,6 +48,10 @@
 
     <div id="track"></div>
     <div id="tree"></div>
+
+    <div id="video-container">
+        <video src="happy-cat.mp4" autoplay loop muted playsinline></video>
+    </div>
 
 <script>
     // --- CONFIG ---
@@ -85,7 +112,7 @@
         // 3. RENDER TRACK
         let trackHTML = "";
         const r = Math.floor(sledPos); 
-        const s = r + 6; // Sledge is 6 spaces after reindeer
+        const s = r + 6; 
         
         for (let x = 0; x < width; x++) {
             if (x === r) {
@@ -94,7 +121,6 @@
             else if (x === s) {
                 trackHTML += col('🛷', '', 'item big');
             }
-            // CHANGE: Trail moved 3 spaces right (starts 6 spaces after Sledge)
             else if (x > s + 6 && x <= s + 11) {
                 trackHTML += col(' ~ ', '#ccc', 'item trail');
             }
@@ -106,7 +132,7 @@
         document.getElementById('tree').innerHTML = treeHTML;
         document.getElementById('track').innerHTML = trackHTML;
 
-        // Reset when the longer train goes off screen
+        // Reset
         sledPos = (sledPos < -40) ? width : sledPos - 0.5;
     }
 
