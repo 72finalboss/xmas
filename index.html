@@ -16,7 +16,7 @@
         pre { white-space: pre; line-height: 1.2; margin: 0; }
         .big-emoji {
             font-size: 6em;
-            line-height: 0.8;
+            line-height: 0.7;
             vertical-align: middle;
         }
     </style>
@@ -54,48 +54,58 @@ let sledPos = -10;
 const lines = treeRaw.split('\n');
 const width = Math.max(...lines.map(l=>l.length), 50);
 
+// Color helper (optional class for big emoji)
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
     return `<span${classAttr} style="${style}">${text}</span>`;
 }
 
+// Tree rendering remains as before
 function renderTree() {
-    return lines.map((line,i) => {
-        // Pad all lines
+    return lines.map((line, i) => {
         let padLine = line.padEnd(width, " ");
         let res = "";
-
-        // If top star, color yellow, else treat normally
-        for (let j=0; j<padLine.length; j++) {
+        for (let j = 0; j < padLine.length; j++) {
             let c = padLine[j];
             if (i === 0 && c === '*') res += color(c, styles.yellow);
             else if (c === 'O') {
-                const col = styles.ornament[Math.floor(Math.random()*styles.ornament.length)];
+                const col = styles.ornament[Math.floor(Math.random() * styles.ornament.length)];
                 res += color("O", `color:${col}`);
             } else if ("*/\\".includes(c)) res += color(c, styles.green);
             else if ("|_".includes(c)) res += color(c, styles.brown);
-            else if (c === " ") res += Math.random()<0.05 ? color(SNOW, styles.white) : " ";
+            else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
             else res += c;
         }
         return res;
-    }).join("\n");
+    }).join('\n');
 }
 
+// Render track as multiple vertical lines to give room for large emojis
 function renderTrack() {
-    const track = Array(width).fill(" ");
-    let r = Math.floor(sledPos), s = r-1;
-    for (let i=1; i<=5; i++) {
-        let t = s-i; if (t>=0 && t<width) track[t] = color(TRAIL, styles.white);
+    const trackLines = [];
+    const TRACK_HEIGHT = 6;
+    const r = Math.floor(sledPos), s = r-1;
+
+    for(let line=0; line<TRACK_HEIGHT; line++) {
+        const arr = Array(width).fill(" ");
+        // Draw enlarged emojis in their own lines for visibility
+        if (line === 1 && r >= 0 && r < width) arr[r] = color(EMOJI.reindeer, styles.white, "big-emoji");
+        if (line === 3 && s >= 0 && s < width) arr[s] = color(EMOJI.sledge, styles.white, "big-emoji");
+        // Draw trail below sledge
+        if (line === 5) {
+            for (let i=1; i<=5; i++) {
+                const t = s-i;
+                if (t>=0 && t<width) arr[t] = color(TRAIL, styles.white);
+            }
+        }
+        trackLines.push(arr.join(""));
     }
-    // Use big class for bigger emojis:
-    if (s>=0 && s<width) track[s] = color(EMOJI.sledge, styles.white, "big-emoji");
-    if (r>=0 && r<width) track[r] = color(EMOJI.reindeer, styles.white, "big-emoji");
-    return "\n" + track.join("");
+    return trackLines.join('\n');
 }
 
 function animate() {
-    document.getElementById('canvas').innerHTML = renderTree() + renderTrack();
-    sledPos = (sledPos>width+5)?-10:sledPos+1;
+    document.getElementById('canvas').innerHTML = renderTree() + "\n" + renderTrack();
+    sledPos = (sledPos > width + 5) ? -10 : sledPos + 1;
 }
 setInterval(animate, 150);
 </script>
