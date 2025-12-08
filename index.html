@@ -19,43 +19,45 @@
         }
 
         #tree-canvas { 
-            white-space: pre; 
-            line-height: 1.2; 
+            /* Removed 'white-space: pre' here, moving it to the lines */
             margin-bottom: 20px; 
             font-weight: bold;
             font-size: 1.2rem;
-            /* Ensures tree stays centered regardless of width */
-            text-align: center; 
+            display: flex;
+            flex-direction: column; /* Forces vertical stacking */
+            align-items: center;    /* Centers the tree in the middle of the screen */
+        }
+
+        /* NEW CLASS: Ensures every line is a separate block */
+        .tree-line {
+            white-space: pre; /* Keeps the internal spaces (the shape of the tree) */
+            height: 1.2em;    /* Consistent height prevents jumping */
+            display: block;
         }
 
         #track-canvas {
             display: flex;
             flex-direction: row;
             justify-content: flex-start;
-            /* ALIGNMENT FIX: Center the small trail with the big emojis */
             align-items: center; 
             height: 150px; 
             width: 100%;
-            /* PREVENT WRAPPING: Keeps everything on one line */
             white-space: nowrap; 
             overflow: hidden;
         }
 
         .track-item {
-            /* Standard width for empty space and trails */
             min-width: 15px; 
             text-align: center;
             display: inline-block;
         }
 
-        /* Special class for the big emojis so they don't get squashed */
         .big-item {
             font-size: 6em;
             line-height: 1;
-            /* Reset width to auto so the emoji takes the space it needs */
             width: auto; 
             min-width: auto;
-            margin: 0 5px; /* Add a little breathing room */
+            margin: 0 5px; 
         }
 
         .trail {
@@ -67,7 +69,7 @@
 </head>
 <body>
 
-    <pre id="tree-canvas"></pre>
+    <div id="tree-canvas"></div>
     <div id="track-canvas"></div>
 
 <script>
@@ -95,10 +97,10 @@ const styles = {
 };
 
 const EMOJI = {sledge:"🛷", reindeer:"🦌"};
-const SNOW = ".", TRAIL = " ~ "; // Changed trail to ~ for a 'wind' look
+const SNOW = ".", TRAIL = " ~ "; 
 let sledPos = -10;
 const lines = treeRaw.split('\n');
-const width = Math.max(...lines.map(l=>l.length), 60); // Increased logic width
+const width = Math.max(...lines.map(l=>l.length), 60);
 
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
@@ -106,8 +108,8 @@ function color(text, style, extraClass = "") {
 }
 
 function renderTree() {
-    return lines.map((line, i) => {
-        // Center the tree lines relative to the max width
+    // Generate an array of HTML strings, one for each line
+    const rows = lines.map((line, i) => {
         let padLine = line.padEnd(width, " ");
         let res = "";
         for (let j = 0; j < padLine.length; j++) {
@@ -121,16 +123,19 @@ function renderTree() {
             else if (c === " ") res += Math.random() < 0.05 ? color(SNOW, styles.white) : " ";
             else res += c;
         }
-        return res;
-    }).join('\n');
+        // WRAPPER: Wrap each processed line in a div
+        return `<div class="tree-line">${res}</div>`;
+    });
+    
+    // Join them with nothing (the divs provide the break)
+    return rows.join('');
 }
 
 function renderTrack() {
     const track = [];
-    let r = Math.floor(sledPos); // Reindeer position
-    let s = r - 1;               // Sledge position
+    let r = Math.floor(sledPos); 
+    let s = r - 1;               
     
-    // We render a grid of spans
     for (let i = 0; i < width; i++) {
         let content = '';
         let classList = 'track-item';
@@ -145,7 +150,6 @@ function renderTrack() {
             content = TRAIL;
             classList += ' trail';
         } else {
-            // Use non-breaking space to hold layout structure
             content = '&nbsp;'; 
         }
         track.push(`<span class="${classList}">${content}</span>`);
@@ -157,8 +161,7 @@ function animate() {
     document.getElementById('tree-canvas').innerHTML = renderTree();
     document.getElementById('track-canvas').innerHTML = renderTrack();
     
-    // Move sled, reset when it goes off screen
-    sledPos = (sledPos > width + 5) ? -10 : sledPos + 0.5; // Slowed down slightly for smoothness
+    sledPos = (sledPos > width + 5) ? -10 : sledPos + 0.5; 
 }
 
 setInterval(animate, 100);
