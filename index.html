@@ -6,144 +6,91 @@
     <title>Christmas Tree Animation</title>
     <style>
         body {
-            background-color: #000000;
-            color: #ffffff;
+            background: #000;
+            color: #fff;
             font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            font-weight: bold;
-            font-size: 1.2rem;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; margin: 0; overflow: hidden;
+            font-weight: bold; font-size: 1.2rem;
         }
-        pre {
-            white-space: pre; 
-            line-height: 1.2;
-        }
+        pre { white-space: pre; line-height: 1.2; margin: 0; }
     </style>
 </head>
 <body>
-
     <pre id="canvas"></pre>
-
 <script>
-    // --- 1. CONFIGURATION ---
-    
-    // UPDATED: This now matches YOUR specific tree structure
-    const treeRaw = `
-             *
-            / \\
-           /*O*\\
-          /*****\\
-         /**O****\\
-        /******O**\\
-       /**O********\\
-      /*********O***\\
-     /****O**********\\
-    /*********O***O***\\
-          |_____|
-          |_____|
-    `;
+const treeRaw = `
+         *
+        / \
+       /*O*\
+      /*****\
+     /**O****\
+    /******O**\
+   /**O********\
+  /*********O***\
+ /****O**********\
+/*********O***O***\
+      |_____|
+      |_____|
+`.trim();
 
-    // Colors
-    const GREEN_STYLE = 'color: #2ecc71;';
-    const YELLOW_STYLE = 'color: #f1c40f;';
-    const BROWN_STYLE = 'color: #d35400;';
-    const WHITE_STYLE = 'color: #ffffff;';
-    
-    const ORNAMENT_COLORS = ['#e74c3c', '#3498db', '#9b59b6', '#1abc9c', '#ffffff'];
+const styles = {
+    green: 'color: #2ecc71;',
+    yellow: 'color: #f1c40f;',
+    brown:  'color: #d35400;',
+    white:  'color: #ffffff;',
+    ornament: [
+        '#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff'
+    ]
+};
+const EMOJI = {sledge:"🛷", reindeer:"🦌"};
+const SNOW = ".", TRAIL = "=";
+let sledPos = -10;
+const lines = treeRaw.split('\n');
+const width = Math.max(...lines.map(l=>l.length), 50);
 
-    // Symbols
-    const SLEDGE_EMOJI = "🛷";
-    const REINDEER_EMOJI = "🦌";
-    const SNOW_CHAR = ".";
-    const TRAIL_CHAR = "=";
+function color(text, style) {
+    return `<span style="${style}">${text}</span>`;
+}
 
-    // Movement
-    let sledPos = -10;
-    const width = 50; 
+function renderTree() {
+    return lines.map((line,i) => {
+        // Pad all lines
+        let padLine = line.padEnd(width, " ");
+        let res = "";
 
-    function colorize(text, style) {
-        return `<span style="${style}">${text}</span>`;
-    }
-
-    // --- 2. ANIMATION LOOP ---
-    function animate() {
-        // Use trim() to remove the first newline, but split ensures we keep structure
-        const lines = treeRaw.replace(/^\s*\n/, "").replace(/\s*$/, "").split('\n');
-        let output = "";
-
-        // --- PART A: PROCESS TREE & SNOW ---
-        lines.forEach(line => {
-            // Pad line to 50 chars
-            let paddedLine = line.padEnd(width, " ");
-            let processedLine = "";
-
-            for (let char of paddedLine) {
-                if (char === 'O') {
-                    let randomColor = ORNAMENT_COLORS[Math.floor(Math.random() * ORNAMENT_COLORS.length)];
-                    processedLine += colorize("O", `color: ${randomColor}`);
-                } 
-                else if (['*', '/', '\\'].includes(char)) {
-                    processedLine += colorize(char, GREEN_STYLE);
-                } 
-                else if (['|', '_'].includes(char)) {
-                    processedLine += colorize(char, BROWN_STYLE);
-                } 
-                else if (char === ' ') {
-                    if (Math.random() < 0.05) {
-                        processedLine += colorize(SNOW_CHAR, WHITE_STYLE);
-                    } else {
-                        processedLine += " ";
-                    }
-                } 
-                else {
-                    processedLine += char;
-                }
-            }
-            output += processedLine + "\n";
-        });
-
-        // Fix Top Star
-        const greenStarHTML = colorize("*", GREEN_STYLE);
-        const yellowStarHTML = colorize("*", YELLOW_STYLE);
-        output = output.replace(greenStarHTML, yellowStarHTML);
-
-        // --- PART B: PROCESS SLEDGE & REINDEER ---
-        let trackLine = new Array(width).fill(" ");
-
-        let rPos = Math.floor(sledPos);     // Reindeer
-        let sPos = Math.floor(sledPos) - 1; // Sledge
-
-        // Draw Trail
-        for (let i = 1; i <= 5; i++) {
-            let tPos = sPos - i;
-            if (tPos >= 0 && tPos < width) {
-                trackLine[tPos] = colorize(TRAIL_CHAR, WHITE_STYLE);
-            }
+        // If top star, color yellow, else treat normally
+        for (let j=0; j<padLine.length; j++) {
+            let c = padLine[j];
+            if (i === 0 && c === '*') res += color(c, styles.yellow);
+            else if (c === 'O') {
+                const col = styles.ornament[Math.floor(Math.random()*styles.ornament.length)];
+                res += color("O", `color:${col}`);
+            } else if ("*/\\".includes(c)) res += color(c, styles.green);
+            else if ("|_".includes(c)) res += color(c, styles.brown);
+            else if (c === " ") res += Math.random()<0.05 ? color(SNOW, styles.white) : " ";
+            else res += c;
         }
+        return res;
+    }).join("\n");
+}
 
-        // Draw Sledge
-        if (sPos >= 0 && sPos < width) trackLine[sPos] = SLEDGE_EMOJI;
-
-        // Draw Reindeer
-        if (rPos >= 0 && rPos < width) trackLine[rPos] = REINDEER_EMOJI;
-
-        output += "\n" + trackLine.join("");
-
-        // --- PART C: RENDER ---
-        document.getElementById('canvas').innerHTML = output;
-
-        sledPos += 1;
-        if (sledPos > width + 5) {
-            sledPos = -10;
-        }
+function renderTrack() {
+    const track = Array(width).fill(" ");
+    let r = Math.floor(sledPos), s = r-1;
+    for (let i=1; i<=5; i++) {
+        let t = s-i; if (t>=0 && t<width) track[t] = color(TRAIL, styles.white);
     }
+    if (s>=0 && s<width) track[s] = EMOJI.sledge;
+    if (r>=0 && r<width) track[r] = EMOJI.reindeer;
+    return "\n" + track.join("");
+}
 
-    setInterval(animate, 150);
-
+function animate() {
+    document.getElementById('canvas').innerHTML = renderTree() + renderTrack();
+    sledPos = (sledPos>width+5)?-10:sledPos+1;
+}
+setInterval(animate, 150);
 </script>
 </body>
 </html>
