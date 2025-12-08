@@ -12,17 +12,37 @@
             display: flex; justify-content: center; align-items: center;
             height: 100vh; margin: 0; overflow: hidden;
             font-weight: bold; font-size: 1.2rem;
+            flex-direction: column;
         }
-        pre { white-space: pre; line-height: 1.2; margin: 0; }
+        #tree-canvas { white-space: pre; line-height: 1.2; margin: 0; }
+        #track-canvas {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: flex-end;
+            height: 140px;  /* Make space for giant emoji! */
+            width: 100%;
+            margin: 0;
+        }
         .big-emoji {
             font-size: 6em;
-            line-height: 0.7;
+            line-height: 0.8;
             vertical-align: middle;
+        }
+        .trail {
+            color: #fff;
+            font-size: 1.2rem;
+        }
+        .track-item {
+            width: 1.2em;
+            text-align: center;
+            display: inline-block;
         }
     </style>
 </head>
 <body>
-    <pre id="canvas"></pre>
+    <pre id="tree-canvas"></pre>
+    <div id="track-canvas"></div>
 <script>
 const treeRaw = `
          *
@@ -54,13 +74,12 @@ let sledPos = -10;
 const lines = treeRaw.split('\n');
 const width = Math.max(...lines.map(l=>l.length), 50);
 
-// Color helper (optional class for big emoji)
 function color(text, style, extraClass = "") {
     let classAttr = extraClass ? ` class="${extraClass}"` : "";
     return `<span${classAttr} style="${style}">${text}</span>`;
 }
 
-// Tree rendering remains as before
+// Tree stays classic
 function renderTree() {
     return lines.map((line, i) => {
         let padLine = line.padEnd(width, " ");
@@ -80,31 +99,33 @@ function renderTree() {
     }).join('\n');
 }
 
-// Render track as multiple vertical lines to give room for large emojis
+// Track is now an array of elements for flex rendering!
 function renderTrack() {
-    const trackLines = [];
-    const TRACK_HEIGHT = 6;
-    const r = Math.floor(sledPos), s = r-1;
-
-    for(let line=0; line<TRACK_HEIGHT; line++) {
-        const arr = Array(width).fill(" ");
-        // Draw enlarged emojis in their own lines for visibility
-        if (line === 1 && r >= 0 && r < width) arr[r] = color(EMOJI.reindeer, styles.white, "big-emoji");
-        if (line === 3 && s >= 0 && s < width) arr[s] = color(EMOJI.sledge, styles.white, "big-emoji");
-        // Draw trail below sledge
-        if (line === 5) {
-            for (let i=1; i<=5; i++) {
-                const t = s-i;
-                if (t>=0 && t<width) arr[t] = color(TRAIL, styles.white);
-            }
+    const track = [];
+    let r = Math.floor(sledPos), s = r-1;
+    for (let i = 0; i < width; i++) {
+        let content = '';
+        let classList = 'track-item';
+        if (i === r) {
+            content = EMOJI.reindeer;
+            classList += ' big-emoji';
+        } else if (i === s) {
+            content = EMOJI.sledge;
+            classList += ' big-emoji';
+        } else if (i >= s-5 && i < s) {
+            content = TRAIL;
+            classList += ' trail';
+        } else {
+            content = '';
         }
-        trackLines.push(arr.join(""));
+        track.push(`<span class="${classList}">${content}</span>`);
     }
-    return trackLines.join('\n');
+    return track.join('');
 }
 
 function animate() {
-    document.getElementById('canvas').innerHTML = renderTree() + "\n" + renderTrack();
+    document.getElementById('tree-canvas').innerHTML = renderTree();
+    document.getElementById('track-canvas').innerHTML = renderTrack();
     sledPos = (sledPos > width + 5) ? -10 : sledPos + 1;
 }
 setInterval(animate, 150);
