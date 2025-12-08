@@ -3,245 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Christmas Tree Animation</title>
+    <title>Christmas Tree</title>
     <style>
         body {
-            background: #000011; /* Dark Blue */
-            color: #fff;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            min-height: 100vh; 
-            margin: 0; 
-            flex-direction: column;
-            width: 100%;
-            overflow: hidden; 
+            background: #000011; color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            height: 100vh; margin: 0; overflow: hidden; width: 100%;
         }
-
-        #tree-canvas { 
-            /* Tree is now below the track */
-            font-weight: bold;
-            font-size: 1.2rem;
-            display: flex;
-            flex-direction: column; 
-            align-items: center;
-            width: 100%;
-        }
-
-        .tree-line {
-            white-space: pre; 
-            height: 1.2em;    
-            display: block;
-            text-align: center;
-        }
-
-        #track-canvas {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: center; 
-            height: 100px; /* Reduced slightly so it fits better with the gap */
-            width: 100%;
-            white-space: nowrap; 
-            margin-bottom: 20px; /* Space between track and snow-sky */
-        }
-
-        .track-item {
-            min-width: 15px; 
-            text-align: center;
-            display: inline-block;
-        }
-
-        .big-item {
-            font-size: 6em;
-            line-height: 1;
-            width: auto; 
-            min-width: auto;
-            margin: 0 5px; 
-        }
-
-        .trail {
-            color: #ccc;
-            font-size: 1.5rem;
-            opacity: 0.7;
-        }
+        #track, #tree { width: 100%; white-space: pre; text-align: center; font-weight: bold; }
+        #track { height: 100px; display: flex; justify-content: center; align-items: center; }
+        #tree  { font-size: 1.2rem; line-height: 1.2; }
+        
+        .item { display: inline-block; min-width: 15px; text-align: center; }
+        .big  { font-size: 6em; line-height: 1; margin: 0 5px; width: auto; }
+        .trail{ color: #ccc; font-size: 1.5rem; opacity: 0.7; }
     </style>
 </head>
 <body>
 
-    <div id="track-canvas"></div>
-    <div id="tree-canvas"></div>
+    <div id="track"></div>
+    <div id="tree"></div>
 
 <script>
-// --- CONFIGURATION ---
-
-const treeBody = [
-    "          *",
-    "         / \\",
-    "        /*O*\\",
-    "       /*****\\",
-    "      /**O****\\",
-    "     /******O**\\",
-    "    /**O********\\",
-    "   /*********O***\\",
-    "  /****O**********\\",
-    " /*********O***O***\\",
-    "      |_____|",
-    "      |_____|"
-];
-
-// CHANGE: Create 10 empty lines for the "Snow Gap"
-const GAP_SIZE = 10;
-const gapLines = Array(GAP_SIZE).fill(""); 
-
-// Combine them: [10 Blank Lines] + [Tree Lines]
-const lines = gapLines.concat(treeBody);
-
-const styles = {
-    green: 'color: #2ecc71;',
-    yellow: 'color: #f1c40f;',
-    brown:  'color: #d35400;',
-    white:  'color: #ffffff;',
-    ornament: ['#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff']
-};
-
-const EMOJI = {sledge:"🛷", reindeer:"🦌"};
-const SNOW = ".";
-const TRAIL = " ~ "; 
-
-// Full screen width simulation
-const width = 200; 
-
-// Start exactly at the Right Border
-let sledPos = width;
-
-// TIMING COUNTERS
-let ornamentTick = 0;
-let snowTick = 0;
-
-// CALCULATE GLOBAL OFFSET FOR TREE CENTERING
-// We only care about the width of the actual tree part
-const maxLineLength = Math.max(...treeBody.map(l => l.length));
-const treeStartColumn = Math.floor((width - maxLineLength) / 2);
-
-// Setup initial snow map
-let snowMap = [];
-for(let r=0; r<lines.length; r++) {
-    let row = [];
-    for(let c=0; c<width; c++) {
-        row.push(false);
-    }
-    snowMap.push(row);
-}
-
-function color(text, style, extraClass = "") {
-    let classAttr = extraClass ? ` class="${extraClass}"` : "";
-    return `<span${classAttr} style="${style}">${text}</span>`;
-}
-
-function renderTree() {
-    let htmlOutput = "";
+    // --- CONFIG ---
+    const width = 200;  
+    const gapHeight = 10; 
     
-    for (let i = 0; i < lines.length; i++) {
-        let line = lines[i];
-        let res = "";
-        
-        for (let j = 0; j < width; j++) {
-            
-            // Calculate where we are relative to the tree block
-            let treeCharIndex = j - treeStartColumn;
+    const treeDesign = [
+        "          *", "         / \\", "        /*O*\\", "       /*****\\", 
+        "      /**O****\\", "     /******O**\\", "    /**O********\\", 
+        "   /*********O***\\", "  /****O**********\\", " /*********O***O***\\", 
+        "      |_____|", "      |_____|"
+    ];
 
-            // Check if we are inside the bounds of the tree string
-            if (treeCharIndex >= 0 && treeCharIndex < line.length) {
-                let c = line[treeCharIndex]; 
+    const lines = [...Array(gapHeight).fill(""), ...treeDesign];
+    
+    // Center the tree
+    const treeWidth = Math.max(...treeDesign.map(l => l.length));
+    const startCol  = Math.floor((width - treeWidth) / 2);
 
-                // CHANGE: Star is now at index 'GAP_SIZE' (10), not 0
-                if (i === GAP_SIZE && c === '*') {
-                    res += color(c, styles.yellow); 
-                } 
-                else if (c === 'O') {
-                    const colorIndex = (Math.floor(ornamentTick / 15) + j) % styles.ornament.length;
-                    res += color("O", `color:${styles.ornament[colorIndex]}`);
-                } 
-                else if ("*/\\".includes(c)) {
-                    res += color(c, styles.green);
-                } 
-                else if ("|_".includes(c)) {
-                    res += color(c, styles.brown);
-                } 
-                else if (c === " ") {
-                    res += (snowMap[i] && snowMap[i][j]) ? color(SNOW, styles.white) : " ";
+    let sledPos = width;
+    let ticks = 0;
+    
+    let snow = Array.from({length: lines.length}, () => Array(width).fill(false));
+
+    const colors = { y: '#f1c40f', g: '#2ecc71', b: '#d35400', w: '#ffffff' };
+    const ornaments = ['#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff'];
+    const col = (txt, c, cls='') => `<span class="${cls}" style="color:${c}">${txt}</span>`;
+
+    function render() {
+        ticks++;
+
+        // 1. UPDATE SNOW
+        if (ticks % 10 === 0) {
+            snow = snow.map(row => row.map(() => Math.random() < 0.02));
+        }
+
+        // 2. RENDER TREE
+        const treeHTML = lines.map((line, y) => {
+            let rowHTML = "";
+            for (let x = 0; x < width; x++) {
+                const charIndex = x - startCol;
+                const char = line[charIndex]; 
+                
+                if (char && char !== ' ') {
+                    if (y === gapHeight && char === '*') rowHTML += col(char, colors.y);
+                    else if (char === 'O') rowHTML += col('O', ornaments[(Math.floor(ticks/15)+x)%5]);
+                    else if ("*/\\".includes(char)) rowHTML += col(char, colors.g);
+                    else if ("|_".includes(char))   rowHTML += col(char, colors.b);
+                    else rowHTML += char;
                 } 
                 else {
-                    res += c;
+                    rowHTML += snow[y][x] ? col('.', colors.w) : ' ';
                 }
-            } else {
-                 // OUTSIDE THE TREE (Snow Area for Gap and Sides)
-                 res += (snowMap[i] && snowMap[i][j]) ? color(SNOW, styles.white) : " ";
+            }
+            return `<div>${rowHTML}</div>`;
+        }).join('');
+
+        // 3. RENDER TRACK
+        let trackHTML = "";
+        const r = Math.floor(sledPos); 
+        const s = r + 6; // Sledge is 6 spaces after reindeer
+        
+        for (let x = 0; x < width; x++) {
+            if (x === r) {
+                trackHTML += col('🦌', '', 'item big');
+            }
+            else if (x === s) {
+                trackHTML += col('🛷', '', 'item big');
+            }
+            // CHANGE: Trail moved 3 spaces right (starts 6 spaces after Sledge)
+            else if (x > s + 6 && x <= s + 11) {
+                trackHTML += col(' ~ ', '#ccc', 'item trail');
+            }
+            else {
+                trackHTML += `<span class="item">&nbsp;</span>`;
             }
         }
-        htmlOutput += `<div class="tree-line">${res}</div>`;
+
+        document.getElementById('tree').innerHTML = treeHTML;
+        document.getElementById('track').innerHTML = trackHTML;
+
+        // Reset when the longer train goes off screen
+        sledPos = (sledPos < -40) ? width : sledPos - 0.5;
     }
-    return htmlOutput;
-}
 
-function renderTrack() {
-    let trackHTML = "";
-    let r = Math.floor(sledPos); 
-    let s = r + 1;               
-    
-    for (let i = 0; i < width; i++) {
-        let content = '';
-        let classList = 'track-item';
-
-        if (i === r) {
-            content = EMOJI.reindeer; 
-            classList += ' big-item';
-        } else if (i === s) {
-            content = EMOJI.sledge; 
-            classList += ' big-item';
-        } else if (i > s && i <= s + 4) { 
-            content = TRAIL;
-            classList += ' trail';
-        } else {
-            content = '&nbsp;'; 
-        }
-        trackHTML += `<span class="${classList}">${content}</span>`;
-    }
-    return trackHTML;
-}
-
-function animate() {
-    snowTick++;
-    if (snowTick % 10 === 0) {
-        for(let r=0; r<lines.length; r++) {
-            for(let c=0; c<width; c++) {
-                // Low density snow for full screen
-                snowMap[r][c] = (Math.random() < 0.02);
-            }
-        }
-    }
-    
-    ornamentTick++;
-
-    const treeEl = document.getElementById('tree-canvas');
-    const trackEl = document.getElementById('track-canvas');
-    
-    if (treeEl) treeEl.innerHTML = renderTree();
-    if (trackEl) trackEl.innerHTML = renderTrack();
-    
-    // Move Reindeer
-    if (sledPos < -8) {
-        sledPos = width;
-    } else {
-        sledPos -= 0.5;
-    }
-}
-
-// Start
-setInterval(animate, 80);
-
+    setInterval(render, 80);
 </script>
 </body>
 </html>
