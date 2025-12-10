@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Christmas Tree - Last Christmas</title>
+    <title>Christmas Tree - Last Christmas (MP3)</title>
     <style>
         body {
             background: #000011; color: #fff;
@@ -18,11 +18,13 @@
             padding: 20px 0;    
         }
 
-        /* YOUTUBE PLAYER STYLE */
-        #player-wrapper {
+        /* Audio Player Style */
+        audio {
             margin-bottom: 20px;
-            border: 2px solid #333;
-            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+            width: 300px;
+            height: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
         }
 
         #track, #tree { width: 100%; white-space: pre; text-align: center; font-weight: bold; }
@@ -48,15 +50,13 @@
         .lyric-text { 
             text-shadow: 0 0 5px currentColor; 
             font-weight: 900; 
-            background: rgba(0,0,0,0.5); /* Slight background to make text pop over snow */
+            background: rgba(0,0,0,0.5); 
         }
     </style>
 </head>
 <body>
 
-    <div id="player-wrapper">
-        <div id="yt-player"></div>
-    </div>
+    <audio id="bg-music" src="Last Christmas.mp3" controls autoplay loop></audio>
 
     <div id="track"></div>
     <div id="tree"></div>
@@ -68,28 +68,14 @@
     </div>
 
 <script>
-    // --- 1. YOUTUBE API SETUP ---
-    var player;
-    function onYouTubeIframeAPIReady() {
-        player = new YT.Player('yt-player', {
-            height: '200',
-            width: '350',
-            videoId: 'E8gmARGvPlI', // Wham! - Last Christmas
-            playerVars: { 'playsinline': 1 },
-            events: {
-                // You can add 'onReady': onPlayerReady if needed
-            }
-        });
-    }
+    // --- 2. CONFIGURATION ---
+    const width = 200;  
+    const totalGapHeight = 10;
+    const lyricRowStart = 3; 
+    const lyricRowEnd   = 6; 
+    const delaySeconds  = 0.5; // <--- The 0.5s Delay Config
 
-    // Load YouTube Script
-    var tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-
-    // --- 2. LYRICS DATA (Synced to Wham! - Last Christmas) ---
+    // --- 3. LYRICS DATA (Wham! - Last Christmas) ---
     const lyricsData = [
         { time: 0, text: "..." },
         { time: 17, text: "Last Christmas I gave you my heart" },
@@ -118,15 +104,7 @@
         { time: 105, text: "I know you'd fool me again" }
     ];
 
-    // --- 3. TREE CONFIGURATION ---
-    const width = 200;  
-    
-    // Total gap is 10 lines (indices 0 to 9)
-    // 0-2: Top gap (Snow) | 3-6: Lyrics gap | 7-9: Bottom gap (Snow)
-    const totalGapHeight = 10;
-    const lyricRowStart = 3; 
-    const lyricRowEnd   = 6; 
-
+    // --- 4. TREE & ANIMATION SETUP ---
     const treeDesign = [
         "          *", "         / \\", "        /*O*\\", "       /*****\\", 
         "      /**O****\\", "     /******O**\\", "    /**O********\\", 
@@ -135,7 +113,6 @@
     ];
 
     const lines = [...Array(totalGapHeight).fill(""), ...treeDesign];
-    
     const treeWidth = Math.max(...treeDesign.map(l => l.length));
     const startCol  = Math.floor((width - treeWidth) / 2);
 
@@ -147,20 +124,26 @@
     const ornaments = ['#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff'];
     const col = (txt, c, cls='') => `<span class="${cls}" style="color:${c}">${txt}</span>`;
 
+    const audioPlayer = document.getElementById('bg-music');
+
+    // Attempt to force play (Browser might block this until user interaction)
+    window.addEventListener('load', () => {
+        audioPlayer.play().catch(e => console.log("Autoplay blocked until interaction"));
+    });
+
     function render() {
         ticks++;
 
-        // --- A. GET CURRENT TIME FROM YOUTUBE ---
-        let curTime = 0;
-        // Check if YouTube player is loaded and playing
-        if (player && player.getCurrentTime) {
-            curTime = player.getCurrentTime();
-        }
+        // --- A. GET TIME FROM AUDIO TAG ---
+        const curTime = audioPlayer.currentTime;
 
-        // --- B. GET CURRENT LYRIC ---
+        // --- B. SYNC LOGIC WITH DELAY ---
         let currentText = "";
         for(let i=0; i<lyricsData.length; i++){
-            if(curTime >= lyricsData[i].time) currentText = lyricsData[i].text;
+            // We verify if current time is greater than (Lyric Time + Delay)
+            if(curTime >= (lyricsData[i].time + delaySeconds)) {
+                currentText = lyricsData[i].text;
+            }
         }
 
         // --- C. UPDATE SNOW ---
@@ -168,7 +151,7 @@
             snow = snow.map(row => row.map(() => Math.random() < 0.02));
         }
 
-        // --- D. RENDER TREE & LYRICS ---
+        // --- D. RENDER TREE ---
         const treeHTML = lines.map((line, y) => {
             let rowHTML = "";
             const isTextLine = (y === lyricRowStart + 1); 
