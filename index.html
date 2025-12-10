@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Christmas Tree with Lyrics</title>
+    <title>Christmas Tree - Last Christmas</title>
     <style>
         body {
             background: #000011; color: #fff;
@@ -17,9 +17,14 @@
             width: 100%;
             padding: 20px 0;    
         }
-        /* Style for the audio player */
-        audio { margin-bottom: 20px; width: 300px; height: 30px; }
-        
+
+        /* YOUTUBE PLAYER STYLE */
+        #player-wrapper {
+            margin-bottom: 20px;
+            border: 2px solid #333;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+
         #track, #tree { width: 100%; white-space: pre; text-align: center; font-weight: bold; }
         #track { height: 100px; display: flex; justify-content: center; align-items: center; }
         #tree  { font-size: 1.2rem; line-height: 1.2; }
@@ -39,13 +44,19 @@
         .big  { font-size: 6em; line-height: 1; margin: 0 5px; width: auto; }
         .trail{ color: #ccc; font-size: 1.5rem; opacity: 0.7; }
         
-        /* New style for lyrics */
-        .lyric-text { text-shadow: 0 0 5px currentColor; font-weight: 900; }
+        /* Lyric Style */
+        .lyric-text { 
+            text-shadow: 0 0 5px currentColor; 
+            font-weight: 900; 
+            background: rgba(0,0,0,0.5); /* Slight background to make text pop over snow */
+        }
     </style>
 </head>
 <body>
 
-    <audio id="audio" controls src="song.mp3"></audio>
+    <div id="player-wrapper">
+        <div id="yt-player"></div>
+    </div>
 
     <div id="track"></div>
     <div id="tree"></div>
@@ -57,26 +68,64 @@
     </div>
 
 <script>
-    // --- CONFIG ---
+    // --- 1. YOUTUBE API SETUP ---
+    var player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('yt-player', {
+            height: '200',
+            width: '350',
+            videoId: 'E8gmARGvPlI', // Wham! - Last Christmas
+            playerVars: { 'playsinline': 1 },
+            events: {
+                // You can add 'onReady': onPlayerReady if needed
+            }
+        });
+    }
+
+    // Load YouTube Script
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+
+    // --- 2. LYRICS DATA (Synced to Wham! - Last Christmas) ---
+    const lyricsData = [
+        { time: 0, text: "..." },
+        { time: 17, text: "Last Christmas I gave you my heart" },
+        { time: 21, text: "But the very next day you gave it away" },
+        { time: 26, text: "This year, to save me from tears" },
+        { time: 31, text: "I'll give it to someone special" },
+        { time: 35, text: "Last Christmas I gave you my heart" },
+        { time: 39, text: "But the very next day you gave it away" },
+        { time: 43, text: "You gave it away..." },
+        { time: 45, text: "This year, to save me from tears" },
+        { time: 49, text: "I'll give it to someone special" },
+        
+        { time: 68, text: "Once bitten and twice shy" },
+        { time: 76, text: "I keep my distance" },
+        { time: 78, text: "But you still catch my eye" },
+        { time: 80, text: "Tell me baby, do you recognize me?" },
+        { time: 85, text: "Well, it's been a year" },
+        { time: 87, text: "It doesn't surprise me" },
+        
+        { time: 90, text: "Happy Christmas" },
+        { time: 92, text: "I wrapped it up and sent it" },
+        { time: 94, text: "With a note saying 'I love you'" },
+        { time: 97, text: "I meant it" },
+        { time: 99, text: "Now I know what a fool I've been" },
+        { time: 102, text: "But if you kissed me now" },
+        { time: 105, text: "I know you'd fool me again" }
+    ];
+
+    // --- 3. TREE CONFIGURATION ---
     const width = 200;  
     
-    // 2. DEFINE THE GAP SPLIT
     // Total gap is 10 lines (indices 0 to 9)
-    // 0-2: Top gap (3 lines)
-    // 3-6: Lyrics gap (4 lines)
-    // 7-9: Bottom gap (3 lines)
+    // 0-2: Top gap (Snow) | 3-6: Lyrics gap | 7-9: Bottom gap (Snow)
     const totalGapHeight = 10;
     const lyricRowStart = 3; 
-    const lyricRowEnd   = 6; // Exclusive (so rows 3, 4, 5, 6 are the gap)
-
-    // 3. LYRICS DATA (Time in seconds)
-    const lyricsData = [
-        { time: 0,   text: "..." },
-        { time: 3.5, text: "Jingle bells, jingle bells" },
-        { time: 6.0, text: "Jingle all the way" },
-        { time: 9.0, text: "Oh what fun it is to ride" },
-        { time: 12.0, text: "In a one-horse open sleigh" }
-    ];
+    const lyricRowEnd   = 6; 
 
     const treeDesign = [
         "          *", "         / \\", "        /*O*\\", "       /*****\\", 
@@ -85,10 +134,8 @@
         "        |_____|", "        |_____|"
     ];
 
-    // Combine empty gap lines + tree lines
     const lines = [...Array(totalGapHeight).fill(""), ...treeDesign];
     
-    // Center the tree
     const treeWidth = Math.max(...treeDesign.map(l => l.length));
     const startCol  = Math.floor((width - treeWidth) / 2);
 
@@ -100,70 +147,64 @@
     const ornaments = ['#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff'];
     const col = (txt, c, cls='') => `<span class="${cls}" style="color:${c}">${txt}</span>`;
 
-    const audioPlayer = document.getElementById('audio');
-
     function render() {
         ticks++;
 
-        // --- A. GET CURRENT LYRIC ---
+        // --- A. GET CURRENT TIME FROM YOUTUBE ---
+        let curTime = 0;
+        // Check if YouTube player is loaded and playing
+        if (player && player.getCurrentTime) {
+            curTime = player.getCurrentTime();
+        }
+
+        // --- B. GET CURRENT LYRIC ---
         let currentText = "";
-        const curTime = audioPlayer.currentTime;
-        // Find the last lyric that has passed based on time
         for(let i=0; i<lyricsData.length; i++){
             if(curTime >= lyricsData[i].time) currentText = lyricsData[i].text;
         }
 
-        // --- B. UPDATE SNOW ---
+        // --- C. UPDATE SNOW ---
         if (ticks % 10 === 0) {
             snow = snow.map(row => row.map(() => Math.random() < 0.02));
         }
 
-        // --- C. RENDER TREE & LYRICS ---
+        // --- D. RENDER TREE & LYRICS ---
         const treeHTML = lines.map((line, y) => {
             let rowHTML = "";
-            
-            // Check if we are in the "Lyrics Gap" (Rows 3-6)
-            const isLyricRow = (y >= lyricRowStart && y <= lyricRowEnd);
-            // We only print text on one specific row to vertically center it (e.g., row 4)
             const isTextLine = (y === lyricRowStart + 1); 
-
-            // Calculate where lyric starts to center it on SCREEN (not tree)
             const lyricStart = Math.floor((width - currentText.length) / 2);
 
             for (let x = 0; x < width; x++) {
                 
-                // 1. Handle Lyrics Drawing
+                // Draw Lyric
                 if (isTextLine && x >= lyricStart && x < lyricStart + currentText.length) {
                     const char = currentText[x - lyricStart];
                     rowHTML += col(char, colors.lyric, 'lyric-text');
-                    continue; // Skip snow/tree logic for this character
+                    continue; 
                 }
 
-                // 2. Handle Tree Drawing (only if we are past the gap)
+                // Draw Tree
                 if (y >= totalGapHeight) {
                     const charIndex = x - startCol;
                     const char = line[charIndex]; 
                     
                     if (char && char !== ' ') {
-                        // Drawing Tree parts
                         if (y === totalGapHeight && char === '*') rowHTML += col(char, colors.y);
                         else if (char === 'O') rowHTML += col('O', ornaments[(Math.floor(ticks/15)+x)%5]);
                         else if ("*/\\".includes(char)) rowHTML += col(char, colors.g);
                         else if ("|_".includes(char))   rowHTML += col(char, colors.b);
                         else rowHTML += char;
-                        continue; // Skip snow logic
+                        continue; 
                     } 
                 }
 
-                // 3. Handle Snow
-                // Don't draw snow ON TOP of the lyric letters (already handled by continue),
-                // but we can draw snow around it.
+                // Draw Snow
                 rowHTML += snow[y][x] ? col('.', colors.w) : ' ';
             }
             return `<div>${rowHTML}</div>`;
         }).join('');
 
-        // --- D. RENDER TRACK (Unchanged) ---
+        // --- E. RENDER TRACK ---
         let trackHTML = "";
         const r = Math.floor(sledPos); 
         const s = r + 6; 
