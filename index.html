@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Christmas Tree</title>
+    <title>Christmas Tree with Lyrics</title>
     <style>
         body {
             background: #000011; color: #fff;
@@ -17,74 +17,76 @@
             width: 100%;
             padding: 20px 0;    
         }
+        /* Style for the audio player */
+        audio { margin-bottom: 20px; width: 300px; height: 30px; }
+        
         #track, #tree { width: 100%; white-space: pre; text-align: center; font-weight: bold; }
         #track { height: 100px; display: flex; justify-content: center; align-items: center; }
         #tree  { font-size: 1.2rem; line-height: 1.2; }
         
-        /* VIDEO GALLERY STYLES */
         #video-gallery {
             margin-top: 40px;
-            display: flex;           /* Aligns videos in a row */
-            flex-wrap: wrap;         /* Allows wrapping on small screens */
-            justify-content: center; /* Centers them */
-            gap: 20px;               /* Space between videos */
-            width: 90%;
-            max-width: 1000px;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;
+            width: 90%; max-width: 1000px;
         }
-
         .video-wrapper {
-            border: 2px solid #333;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(255,255,255,0.1);
-            width: 300px; /* Fixed width for each video card */
+            border: 2px solid #333; border-radius: 10px; overflow: hidden;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1); width: 300px;
         }
-        
-        video {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
+        video { display: block; width: 100%; height: auto; }
 
         .item { display: inline-block; min-width: 15px; text-align: center; }
         .big  { font-size: 6em; line-height: 1; margin: 0 5px; width: auto; }
         .trail{ color: #ccc; font-size: 1.5rem; opacity: 0.7; }
+        
+        /* New style for lyrics */
+        .lyric-text { text-shadow: 0 0 5px currentColor; font-weight: 900; }
     </style>
 </head>
 <body>
+
+    <audio id="audio" controls src="song.mp3"></audio>
 
     <div id="track"></div>
     <div id="tree"></div>
 
     <div id="video-gallery">
-        
-        <div class="video-wrapper">
-            <video src="happy-cat.mp4" autoplay loop muted playsinline></video>
-        </div>
-
-        <div class="video-wrapper">
-            <video src="dance-cat.mp4" autoplay loop muted playsinline></video>
-        </div>
-
-        <div class="video-wrapper">
-            <video src="dance2-cat.mp4" autoplay loop muted playsinline></video>
-        </div>
-
+        <div class="video-wrapper"><video src="happy-cat.mp4" autoplay loop muted playsinline></video></div>
+        <div class="video-wrapper"><video src="dance-cat.mp4" autoplay loop muted playsinline></video></div>
+        <div class="video-wrapper"><video src="dance2-cat.mp4" autoplay loop muted playsinline></video></div>
     </div>
 
 <script>
     // --- CONFIG ---
     const width = 200;  
-    const gapHeight = 10; 
     
+    // 2. DEFINE THE GAP SPLIT
+    // Total gap is 10 lines (indices 0 to 9)
+    // 0-2: Top gap (3 lines)
+    // 3-6: Lyrics gap (4 lines)
+    // 7-9: Bottom gap (3 lines)
+    const totalGapHeight = 10;
+    const lyricRowStart = 3; 
+    const lyricRowEnd   = 6; // Exclusive (so rows 3, 4, 5, 6 are the gap)
+
+    // 3. LYRICS DATA (Time in seconds)
+    const lyricsData = [
+        { time: 0,   text: "..." },
+        { time: 3.5, text: "Jingle bells, jingle bells" },
+        { time: 6.0, text: "Jingle all the way" },
+        { time: 9.0, text: "Oh what fun it is to ride" },
+        { time: 12.0, text: "In a one-horse open sleigh" }
+    ];
+
     const treeDesign = [
         "          *", "         / \\", "        /*O*\\", "       /*****\\", 
         "      /**O****\\", "     /******O**\\", "    /**O********\\", 
         "   /*********O***\\", "  /****O**********\\", " /*********O***O***\\", 
-        "       |_____|", "       |_____|"
+        "        |_____|", "        |_____|"
     ];
 
-    const lines = [...Array(gapHeight).fill(""), ...treeDesign];
+    // Combine empty gap lines + tree lines
+    const lines = [...Array(totalGapHeight).fill(""), ...treeDesign];
     
     // Center the tree
     const treeWidth = Math.max(...treeDesign.map(l => l.length));
@@ -92,66 +94,90 @@
 
     let sledPos = width;
     let ticks = 0;
-    
     let snow = Array.from({length: lines.length}, () => Array(width).fill(false));
 
-    const colors = { y: '#f1c40f', g: '#2ecc71', b: '#d35400', w: '#ffffff' };
+    const colors = { y: '#f1c40f', g: '#2ecc71', b: '#d35400', w: '#ffffff', lyric: '#ff69b4' };
     const ornaments = ['#e74c3c','#3498db','#9b59b6','#1abc9c','#ffffff'];
     const col = (txt, c, cls='') => `<span class="${cls}" style="color:${c}">${txt}</span>`;
+
+    const audioPlayer = document.getElementById('audio');
 
     function render() {
         ticks++;
 
-        // 1. UPDATE SNOW
+        // --- A. GET CURRENT LYRIC ---
+        let currentText = "";
+        const curTime = audioPlayer.currentTime;
+        // Find the last lyric that has passed based on time
+        for(let i=0; i<lyricsData.length; i++){
+            if(curTime >= lyricsData[i].time) currentText = lyricsData[i].text;
+        }
+
+        // --- B. UPDATE SNOW ---
         if (ticks % 10 === 0) {
             snow = snow.map(row => row.map(() => Math.random() < 0.02));
         }
 
-        // 2. RENDER TREE
+        // --- C. RENDER TREE & LYRICS ---
         const treeHTML = lines.map((line, y) => {
             let rowHTML = "";
+            
+            // Check if we are in the "Lyrics Gap" (Rows 3-6)
+            const isLyricRow = (y >= lyricRowStart && y <= lyricRowEnd);
+            // We only print text on one specific row to vertically center it (e.g., row 4)
+            const isTextLine = (y === lyricRowStart + 1); 
+
+            // Calculate where lyric starts to center it on SCREEN (not tree)
+            const lyricStart = Math.floor((width - currentText.length) / 2);
+
             for (let x = 0; x < width; x++) {
-                const charIndex = x - startCol;
-                const char = line[charIndex]; 
                 
-                if (char && char !== ' ') {
-                    if (y === gapHeight && char === '*') rowHTML += col(char, colors.y);
-                    else if (char === 'O') rowHTML += col('O', ornaments[(Math.floor(ticks/15)+x)%5]);
-                    else if ("*/\\".includes(char)) rowHTML += col(char, colors.g);
-                    else if ("|_".includes(char))   rowHTML += col(char, colors.b);
-                    else rowHTML += char;
-                } 
-                else {
-                    rowHTML += snow[y][x] ? col('.', colors.w) : ' ';
+                // 1. Handle Lyrics Drawing
+                if (isTextLine && x >= lyricStart && x < lyricStart + currentText.length) {
+                    const char = currentText[x - lyricStart];
+                    rowHTML += col(char, colors.lyric, 'lyric-text');
+                    continue; // Skip snow/tree logic for this character
                 }
+
+                // 2. Handle Tree Drawing (only if we are past the gap)
+                if (y >= totalGapHeight) {
+                    const charIndex = x - startCol;
+                    const char = line[charIndex]; 
+                    
+                    if (char && char !== ' ') {
+                        // Drawing Tree parts
+                        if (y === totalGapHeight && char === '*') rowHTML += col(char, colors.y);
+                        else if (char === 'O') rowHTML += col('O', ornaments[(Math.floor(ticks/15)+x)%5]);
+                        else if ("*/\\".includes(char)) rowHTML += col(char, colors.g);
+                        else if ("|_".includes(char))   rowHTML += col(char, colors.b);
+                        else rowHTML += char;
+                        continue; // Skip snow logic
+                    } 
+                }
+
+                // 3. Handle Snow
+                // Don't draw snow ON TOP of the lyric letters (already handled by continue),
+                // but we can draw snow around it.
+                rowHTML += snow[y][x] ? col('.', colors.w) : ' ';
             }
             return `<div>${rowHTML}</div>`;
         }).join('');
 
-        // 3. RENDER TRACK
+        // --- D. RENDER TRACK (Unchanged) ---
         let trackHTML = "";
         const r = Math.floor(sledPos); 
         const s = r + 6; 
         
         for (let x = 0; x < width; x++) {
-            if (x === r) {
-                trackHTML += col('🦌', '', 'item big');
-            }
-            else if (x === s) {
-                trackHTML += col('🛷', '', 'item big');
-            }
-            else if (x > s + 6 && x <= s + 11) {
-                trackHTML += col(' ~ ', '#ccc', 'item trail');
-            }
-            else {
-                trackHTML += `<span class="item">&nbsp;</span>`;
-            }
+            if (x === r) trackHTML += col('🦌', '', 'item big');
+            else if (x === s) trackHTML += col('🛷', '', 'item big');
+            else if (x > s + 6 && x <= s + 11) trackHTML += col(' ~ ', '#ccc', 'item trail');
+            else trackHTML += `<span class="item">&nbsp;</span>`;
         }
 
         document.getElementById('tree').innerHTML = treeHTML;
         document.getElementById('track').innerHTML = trackHTML;
 
-        // Reset
         sledPos = (sledPos < -40) ? width : sledPos - 0.5;
     }
 
